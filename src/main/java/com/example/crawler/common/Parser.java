@@ -7,12 +7,11 @@ import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.WebRequest;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
-import java.io.IOException;
 import java.util.List;
 
 public interface Parser
 {
-    public static WebClient initialiseWebClient()
+    public default WebClient initialiseWebClient()
     {
         final WebClient webClient = new WebClient(BrowserVersion.CHROME);
         webClient.getOptions().setCssEnabled(false);
@@ -28,8 +27,13 @@ public interface Parser
         return webClient;
     }
 
-    public HtmlPage getPageProductsListStore(String productName, int waitTime) throws IOException;
+    public List<Product> parsePages(String productName, int waitTime, int countPage);
 
-    public List<Product> parsePages(HtmlPage pageProductsListStore, int countPage);
+    public default void closeWebClient(WebClient webClient)
+    {
+        webClient.getCurrentWindow().getJobManager().removeAllJobs();
+        webClient.close();
+        System.gc();
+    }
 
 }

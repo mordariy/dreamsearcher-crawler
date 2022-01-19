@@ -5,62 +5,83 @@ import com.example.crawler.entity.Product;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.HtmlElement;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+@Component
 public class ParserRBT implements Parser
 {
-    final WebClient webClient = Parser.initialiseWebClient();
+    private final Logger log = LoggerFactory.getLogger(ParserRBT.class);
 
     @Override
-    public HtmlPage getPageProductsListStore(String productName, int waitTime) throws IOException
+    public List<Product> parsePages(String productName, int waitTime, int countPage)
     {
-        HtmlPage pageFirst = webClient.getPage("https://www.rbt.ru/search/?q=" + productName);
-
-        webClient.waitForBackgroundJavaScript(waitTime);
-
-        return pageFirst;
-    }
-
-    @Override
-    public List<Product> parsePages(HtmlPage pageProductsListStore, int countPage)
-    {
-        if(pageProductsListStore == null)
-        {
-            return null;
-        }
-
-        List<HtmlElement>[] listElements = new List[]{new ArrayList<HtmlElement>(), new ArrayList<HtmlElement>()};
         List<Product> listProduct = new ArrayList<Product>();
+        final WebClient webClient = initialiseWebClient();
 
-        for(int page = 1; page <= countPage; page++)
+        try(webClient)
         {
-            if(page > 1)
+            HtmlPage pageProducts;
+
+            try
             {
+                pageProducts = webClient.getPage("https://www.rbt.ru/search/?search_provider=anyquery&strategy=vectors_extended,zero_queries&q=" + productName);
+            }
+            catch (IOException e)
+            {
+                log.warn("***RBT***: Page list products is not loaded " + e.getMessage());
+                return listProduct;
+            }
+
+            webClient.waitForBackgroundJavaScript(waitTime);
+
+            List<HtmlElement>[] listElements = new List[]{new ArrayList<HtmlElement>(), new ArrayList<HtmlElement>()};
+
+            for (int page = 1; page <= countPage; page++)
+            {
+                if (page > 1)
+                {
+                    try
+                    {
+                        pageProducts = webClient.getPage(pageProducts.getUrl().toString().replace("search", "search/~/page/" + page));
+                    }
+                    catch (IOException e)
+                    {
+                        log.warn("***RBT***: Page list products is not loaded " + e.getMessage());
+                        return listProduct;
+                    }
+                    webClient.waitForBackgroundJavaScript(waitTime);
+                }
+
                 try
                 {
-                    pageProductsListStore = webClient.getPage(pageProductsListStore.getUrl().toString().replace("search", "search/~/page/" + page));
-                } catch (IOException e)
-                {
-                    e.printStackTrace();
+                    listElements[0] = pageProducts.getByXPath("//a[@class='link link_theme_item-catalogue link_underline-color_orange link_size_b item-catalogue__item-name-link']");
+                    listElements[1] = pageProducts.getByXPath("//div[@class='price__row price__row_current text_bold text']");
                 }
-                webClient.waitForBackgroundJavaScript(5000);
+                catch(Exception e)
+                {
+                    log.warn("***RBT***: Searched tags name or price in Xpath not find " + e.getMessage());
+                    return listProduct;
+                }
+
+                for (int i = 0; i < listElements[0].size(); i++)
+                {
+                    listProduct.add(new Product(listElements[0].get(i).getTextContent(), listElements[1].get(i).getTextContent().trim().replaceAll(" ", "")));
+                }
             }
 
-            listElements[0] = pageProductsListStore.getByXPath("//a[@class='link link_theme_item-catalogue link_underline-color_orange link_size_b item-catalogue__item-name-link']");
-            listElements[1] = pageProductsListStore.getByXPath("//div[@class='price__row price__row_current text_bold text']");
-
-            for(int i = 0; i < listElements[0].size(); i++)
-            {
-                listProduct.add(new Product(listElements[0].get(i).getTextContent(), listElements[1].get(i).getTextContent().trim().replaceAll(" ","")));
-            }
+            return listProduct;
 
         }
-
-        webClient.close();
-        return listProduct;
+        finally
+        {
+            closeWebClient(webClient);
+        }
     }
 
 }

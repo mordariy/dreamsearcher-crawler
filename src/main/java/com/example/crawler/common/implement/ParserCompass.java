@@ -4,59 +4,94 @@ import com.example.crawler.common.Parser;
 import com.example.crawler.entity.Product;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
+@Component
 public class ParserCompass implements Parser
 {
-    final WebClient webClient = Parser.initialiseWebClient();
+    private final Logger log = LoggerFactory.getLogger(ParserCompass.class);
 
     @Override
-    public HtmlPage getPageProductsListStore(String productName, int waitTime) throws IOException
+    public List<Product> parsePages(String productName, int waitTime, int countPage)
     {
-        if(webClient == null)
-        {
-            return null;
-        }
-
-        HtmlPage pageFirst = webClient.getPage("https://www.compass.com.ru");
-
-        webClient.waitForBackgroundJavaScript(waitTime);
-
-        HtmlElement inputSearch = (HtmlElement) pageFirst.getFirstByXPath("//input[@id='searchText']");
-        HtmlElement buttonSearch = (HtmlElement) pageFirst.getFirstByXPath("//input[@id='searchSubmit']");
-        buttonSearch.removeAttribute("disabled");
-
-        inputSearch.setAttribute("value",productName);
-
-        HtmlPage pageSecond = buttonSearch.click();
-        //webClient.waitForBackgroundJavaScript(waitTime);
-
-        return pageSecond;
-    }
-
-    @Override
-    public List<Product> parsePages(HtmlPage pageProductsListStore, int countPage)
-    {
-        if(pageProductsListStore == null)
-        {
-            return null;
-        }
-
-        List<HtmlElement>[] listElements = new List[]{new ArrayList<HtmlElement>(), new ArrayList<HtmlElement>()};
         List<Product> listProduct = new ArrayList<Product>();
+        final WebClient webClient = initialiseWebClient();
 
-        listElements[0] = pageProductsListStore.getByXPath("//td[@class='searchPgroup mobileHide']/following-sibling::td[1]/a");
-        listElements[1] = pageProductsListStore.getByXPath("//div[@class='price']");
-
-        for(int i = 0; i < listElements[0].size(); i++)
+        try(webClient)
         {
-            listProduct.add(new Product(listElements[0].get(i).getTextContent(),listElements[1].get(i).getTextContent().trim().replaceAll(" ","")));
+            HtmlPage pageMain = null;
+            HtmlPage pageProducts = null;
+
+            try
+            {
+                pageMain = webClient.getPage("https://www.compass.com.ru");
+            }
+            catch (IOException e)
+            {
+                log.warn("***Compass***: Page main is not loaded " + e.getMessage());
+                return listProduct;
+            }
+
+            webClient.waitForBackgroundJavaScript(waitTime);
+
+            HtmlElement inputSearch;
+            HtmlElement buttonSearch;
+            try
+            {
+                inputSearch = (HtmlElement) pageMain.getFirstByXPath("//input[@id='searchText']");
+                buttonSearch = (HtmlElement) pageMain.getFirstByXPath("//input[@id='searchSubmit']");
+                buttonSearch.removeAttribute("disabled");
+                inputSearch.setAttribute("value", productName);
+            }
+            catch(Exception e)
+            {
+                log.warn("***Compass***: Element inputSearch or buttonSearch is null " + e.getMessage());
+                return listProduct;
+            }
+
+            try
+            {
+                pageProducts = buttonSearch.click();
+            }
+            catch (IOException e)
+            {
+                log.warn("***Compass***: Page list products is not loaded " + e.getMessage());
+                return listProduct;
+            }
+
+            List<HtmlElement>[] listElements = new List[]{new ArrayList<HtmlElement>(), new ArrayList<HtmlElement>()};
+
+            webClient.waitForBackgroundJavaScript(waitTime);
+
+            try
+            {
+                listElements[0] = pageProducts.getByXPath("//td[@class='searchPgroup mobileHide']/following-sibling::td[1]/a");
+                listElements[1] = pageProducts.getByXPath("//div[@class='price']");
+            }
+            catch (Exception e)
+            {
+                log.warn("***Compass***: Searched tags name or price in Xpath not find " + e.getMessage());
+                return listProduct;
+            }
+
+            for(int i = 0; i < listElements[0].size(); i++)
+            {
+                listProduct.add(new Product(listElements[0].get(i).getTextContent(),listElements[1].get(i).getTextContent().trim().replaceAll(" ","")));
+            }
+
+            return listProduct;
+        }
+        finally
+        {
+            closeWebClient(webClient);
         }
 
-        webClient.close();
-        return listProduct;
     }
 }

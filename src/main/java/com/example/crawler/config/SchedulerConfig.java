@@ -11,10 +11,18 @@ import org.springframework.scheduling.annotation.Scheduled;
 @ConditionalOnProperty(name = "scheduler.enabled", matchIfMissing = true)
 public class SchedulerConfig
 {
+    LaunchParse launchParse;
+
+    public SchedulerConfig(LaunchParse launchParse)
+    {
+        this.launchParse = launchParse;
+    }
+
     //Example
-    @Scheduled(cron = "35 23 10 * * ?")
+    //@Scheduled(cron = "30 50 10 * * ?")
+    @Scheduled(fixedRate = 90000)
     public void startParseStore()
     {
-        LaunchParse.start();
+        launchParse.start("samsung", 5, 1);
     }
 }

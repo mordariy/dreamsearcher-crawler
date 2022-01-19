@@ -5,75 +5,110 @@ import com.example.crawler.entity.Product;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.HtmlElement;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+@Component
 public class ParserOnlineTrade implements Parser
 {
-    final WebClient webClient = Parser.initialiseWebClient();
+    private final Logger log = LoggerFactory.getLogger(ParserOnlineTrade.class);
 
     @Override
-    public HtmlPage getPageProductsListStore(String productName, int waitTime) throws IOException
+    public List<Product> parsePages(String productName, int waitTime, int countPage)
     {
-        if(webClient == null)
-        {
-            return null;
-        }
-
-        HtmlPage pageFirst = webClient.getPage("https://www.onlinetrade.ru");
-
-        webClient.waitForBackgroundJavaScript(waitTime);
-
-        HtmlElement inputSearch = (HtmlElement) pageFirst.getFirstByXPath("//input[@class='header__search__inputText js__header__search__inputText']");
-        HtmlElement buttonSearch = (HtmlElement) pageFirst.getFirstByXPath("//input[@class='header__search__inputGogogo']");
-        buttonSearch.removeAttribute("disabled");
-
-        inputSearch.setAttribute("value",productName);
-
-        HtmlPage pageSecond = buttonSearch.click();
-        //webClient.waitForBackgroundJavaScript(waitTime);
-
-        return pageSecond;
-    }
-
-    @Override
-    public List<Product> parsePages(HtmlPage pageProductsListStore, int countPage)
-    {
-        if(pageProductsListStore == null)
-        {
-            return null;
-        }
-
-        List<HtmlElement>[] listElements = new List[]{new ArrayList<HtmlElement>(), new ArrayList<HtmlElement>()};
         List<Product> listProduct = new ArrayList<Product>();
+        final WebClient webClient = initialiseWebClient();
 
-        for(int page = 1; page <= countPage; page++)
+        try(webClient)
         {
-            if(page > 1)
+            HtmlPage pageMain = null;
+            HtmlPage pageProducts = null;
+
+            try
             {
-                HtmlElement nextPageButton = (HtmlElement) pageProductsListStore.getFirstByXPath("//a[@class='js__paginator__linkNext js__ajaxListingSelectPageLink js__ajaxExchange']");
+                pageMain = webClient.getPage("https://www.onlinetrade.ru");
+            }
+            catch (IOException e)
+            {
+                log.warn("***OnlineTrade***: Page main is not loaded " + e.getMessage());
+                return listProduct;
+            }
+
+            webClient.waitForBackgroundJavaScript(waitTime);
+
+            HtmlElement inputSearch;
+            HtmlElement buttonSearch;
+            try
+            {
+                inputSearch = (HtmlElement) pageMain.getFirstByXPath("//input[@class='header__search__inputText js__header__search__inputText']");
+                buttonSearch = (HtmlElement) pageMain.getFirstByXPath("//input[@class='header__search__inputGogogo']");
+                buttonSearch.removeAttribute("disabled");
+                inputSearch.setAttribute("value", productName);
+            }
+            catch(Exception e)
+            {
+                log.warn("***OnlineTrade***: Element inputSearch or buttonSearch is null " + e.getMessage());
+                return listProduct;
+            }
+
+            try
+            {
+                pageProducts = buttonSearch.click();
+            }
+            catch (IOException e)
+            {
+                log.warn("***OnlineTrade***: Page list products is not loaded " + e.getMessage());
+                return listProduct;
+            }
+
+            webClient.waitForBackgroundJavaScript(waitTime);
+
+            List<HtmlElement>[] listElements = new List[]{new ArrayList<HtmlElement>(), new ArrayList<HtmlElement>()};
+
+            for(int page = 1; page <= countPage; page++)
+            {
+                if(page > 1)
+                {
+                    HtmlElement nextPageButton = (HtmlElement) pageProducts.getFirstByXPath("//a[@class='js__paginator__linkNext js__ajaxListingSelectPageLink js__ajaxExchange']");
+                    try
+                    {
+                        pageProducts = nextPageButton.click();
+                    }
+                    catch (IOException e)
+                    {
+                        log.warn("***OnlineTrade***: Page list products is not loaded " + e.getMessage());
+                        return listProduct;
+                    }
+                    webClient.waitForBackgroundJavaScript(waitTime);
+                }
+
                 try
                 {
-                    pageProductsListStore = nextPageButton.click();
-                } catch (IOException e)
-                {
-                    e.printStackTrace();
+                    listElements[0] = pageProducts.getByXPath("//a[@class='indexGoods__item__name']");
+                    listElements[1] = pageProducts.getByXPath("//div[@class='indexGoods__item__price']/span");
                 }
-                webClient.waitForBackgroundJavaScript(5000);
+                catch (Exception e)
+                {
+                    log.warn("***OnlineTrade***: Searched tags name or price in Xpath not find " + e.getMessage());
+                    return listProduct;
+                }
+
+                for(int i = 0; i < listElements[0].size(); i++)
+                {
+                    listProduct.add(new Product(listElements[0].get(i).getTextContent(),listElements[1].get(i).getTextContent().trim().replace("₽", "").replaceAll(" ","")));
+                }
             }
 
-            listElements[0] = pageProductsListStore.getByXPath("//a[@class='indexGoods__item__name']");
-            listElements[1] = pageProductsListStore.getByXPath("//div[@class='indexGoods__item__price']/span");
-
-            for(int i = 0; i < listElements[0].size(); i++)
-            {
-                listProduct.add(new Product(listElements[0].get(i).getTextContent(),listElements[1].get(i).getTextContent().trim().replace("₽", "").replaceAll(" ","")));
-            }
+            return listProduct;
         }
-
-        webClient.close();
-        return listProduct;
+        finally
+        {
+            closeWebClient(webClient);
+        }
     }
 }
