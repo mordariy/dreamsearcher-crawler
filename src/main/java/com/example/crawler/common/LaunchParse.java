@@ -30,7 +30,7 @@ public class LaunchParse
             {
                 return parser.get(finalI).parsePages(productName, waitTimeInSec * 1000, countPageToParse);
             });
-            listFuture.add(com[i]);
+            listFuture.add(com[finalI]);
         }
 
         CompletableFuture<Void> result = CompletableFuture.allOf(listFuture.toArray(new CompletableFuture[]{}));
