@@ -18,36 +18,27 @@ public class LaunchParse
         this.parser = parser;
     }
 
-    public void start(String productName, int waitTimeInSec, int countPageToParse)
+    public void start(String productName, int waitTimeInSec, int countPageToParse) throws InterruptedException, ExecutionException
     {
-        CompletableFuture<List<Product>> com1 = CompletableFuture.supplyAsync(()->
-        {
-            return parser.get(0).parsePages(productName, waitTimeInSec * 1000, countPageToParse);
-        });
-        CompletableFuture<List<Product>> com2 = CompletableFuture.supplyAsync(()->
-        {
-            return parser.get(1).parsePages(productName, waitTimeInSec * 1000, countPageToParse);
-        });
-        CompletableFuture<List<Product>> com3 = CompletableFuture.supplyAsync(()->
-        {
-            return parser.get(2).parsePages(productName, waitTimeInSec * 1000, countPageToParse);
-        });
-        CompletableFuture<List<Product>> com4 = CompletableFuture.supplyAsync(()->
-        {
-            return parser.get(3).parsePages(productName, waitTimeInSec * 1000, countPageToParse);
-        });
-
+        CompletableFuture<List<Product>>[] com = new CompletableFuture[parser.size()];
         List<CompletableFuture<List<Product>>> listFuture = new ArrayList<>();
-        listFuture.add(com1);
-        listFuture.add(com2);
-        listFuture.add(com3);
-        listFuture.add(com4);
+
+        for(int i = 0; i < parser.size(); i++)
+        {
+            int finalI = i;
+            com[i] = CompletableFuture.supplyAsync(()->
+            {
+                return parser.get(finalI).parsePages(productName, waitTimeInSec * 1000, countPageToParse);
+            });
+            listFuture.add(com[i]);
+        }
 
         CompletableFuture<Void> result = CompletableFuture.allOf(listFuture.toArray(new CompletableFuture[]{}));
         result.thenRunAsync(() ->
         {
             try
             {
+                //Тут должна быть запись в бд
                 System.out.println("----------Citilink----------");
                 for(Product item : listFuture.get(0).get())
                 {
@@ -68,13 +59,10 @@ public class LaunchParse
                 {
                     System.out.println("Название товара: " + item.getName() + " цена: " + item.getPrice());
                 }
-            } catch (InterruptedException e)
-            {
-                e.printStackTrace();
             }
-            catch (ExecutionException e)
+            catch (InterruptedException | ExecutionException e)
             {
-                e.printStackTrace();
+                throw new RuntimeException(e.getMessage(),  e);
             }
         });
 
@@ -82,13 +70,9 @@ public class LaunchParse
         {
             result.get();
         }
-        catch (InterruptedException e)
+        catch (InterruptedException | ExecutionException e)
         {
-            e.printStackTrace();
-        }
-        catch (ExecutionException e)
-        {
-            e.printStackTrace();
+            throw new RuntimeException(e.getMessage(),  e);
         }
     }
 }

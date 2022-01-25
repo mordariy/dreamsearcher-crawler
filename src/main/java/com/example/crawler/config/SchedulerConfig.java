@@ -6,6 +6,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 
+import java.util.concurrent.ExecutionException;
+
 @Configuration
 @EnableScheduling
 @ConditionalOnProperty(name = "scheduler.enabled", matchIfMissing = true)
@@ -18,10 +20,11 @@ public class SchedulerConfig
         this.launchParse = launchParse;
     }
 
-    //Example
+    //Раз в день в 10:50 и 30 секунд
     //@Scheduled(cron = "30 50 10 * * ?")
+    //Для теста, каждые 90 сек
     @Scheduled(fixedRate = 90000)
-    public void startParseStore()
+    public void startParseStore() throws ExecutionException, InterruptedException
     {
         launchParse.start("samsung", 5, 1);
     }
