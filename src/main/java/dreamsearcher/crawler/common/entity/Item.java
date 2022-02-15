@@ -1,0 +1,29 @@
+package dreamsearcher.crawler.common.entity;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
+import javax.persistence.*;
+
+@Entity
+@Table(name = "items")
+@Data
+@AllArgsConstructor
+public class Item {
+    @Id
+    @GeneratedValue
+    @Column(name = "item_id", nullable = false)
+    private String itemId;
+
+    @JoinColumn(name="run_id", referencedColumnName="run_id", nullable=false)
+    private String runId;
+
+    @Column(name = "item_name")
+    private String itemName;
+
+    @Column(name = "link")
+    private String link;
+
+    @Column(name = "price")
+    private double price;
+}
