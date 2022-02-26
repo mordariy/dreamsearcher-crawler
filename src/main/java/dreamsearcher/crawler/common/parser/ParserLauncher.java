@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -28,24 +27,36 @@ public class ParserLauncher {
     }
 
     public void start(String productName, int waitTimeInSec, int countPageToParse) {
-        CompletableFuture<List<Item>>[] com = new CompletableFuture[parser.size()];
-        List<CompletableFuture<List<Item>>> listFuture = new ArrayList<>();
         log.info("[Crawler] Parsing has started with the specified parameters: productName = {}, waitTimeInSec = {}, countPageToParse = {}",
                 productName, waitTimeInSec, countPageToParse);
 
+        List<CompletableFuture<List<Item>>> listFuture = asyncParseItems(productName, waitTimeInSec, countPageToParse);
+        asyncSaveItems(listFuture);
+
+    }
+
+    private List<CompletableFuture<List<Item>>> asyncParseItems(String productName, int waitTimeInSec, int countPageToParse) {
+        CompletableFuture<List<Item>>[] com = new CompletableFuture[parser.size()];
+        List<CompletableFuture<List<Item>>> listFuture = new ArrayList<>();
         for (int i = 0; i < parser.size(); i++) {
             int finalI = i;
             long duration = System.currentTimeMillis();
-            log.info("[Crawler] The {}th parsing circle starts", i);
-            com[i] = CompletableFuture.supplyAsync(() ->
-            {
-                return parser.get(finalI).parsePages(productName, waitTimeInSec * 1000, countPageToParse);
-            });
-            duration = System.currentTimeMillis() - duration;
-            listFuture.add(com[finalI]);
-            log.info("[Crawler] The {}th parsing circle ends for {} milliseconds", i, duration);
-        }
+            log.info("[Crawler] Parsing starts in {}", parser.get(i).getShop());
 
+            log.info("[Crawler] Creating and saving Run...");
+            Run run = runService.create(parser.get(i).getShop());
+            com[i] = CompletableFuture.supplyAsync(() -> parser.get(finalI).parsePages(productName, waitTimeInSec * 1000, countPageToParse, run));
+            listFuture.add(com[finalI]);
+            run.setProcessed(false);
+            runService.update(run);
+
+            duration = System.currentTimeMillis() - duration;
+            log.info("[Crawler] Parsing in {} ends for {} milliseconds", parser.get(i).getShop(), duration);
+        }
+        return listFuture;
+    }
+
+    private void asyncSaveItems(List<CompletableFuture<List<Item>>> listFuture) {
         CompletableFuture<Void> result = CompletableFuture.allOf(listFuture.toArray(new CompletableFuture[]{}));
         result.thenRunAsync(() ->
         {

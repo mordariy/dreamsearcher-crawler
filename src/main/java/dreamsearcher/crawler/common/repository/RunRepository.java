@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface RunRepository extends CrudRepository<Run, String> {
 
-//    Iterable<Run> findAllByProcessed(String processed);
+    Iterable<Run> findAllByIsProcessedTrue();
+    Iterable<Run> findAllByIsProcessedFalse();
 
 }

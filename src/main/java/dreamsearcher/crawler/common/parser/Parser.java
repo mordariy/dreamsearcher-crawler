@@ -3,6 +3,7 @@ package dreamsearcher.crawler.common.parser;
 import com.gargoylesoftware.htmlunit.*;
 import dreamsearcher.crawler.common.entity.Item;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
+import dreamsearcher.crawler.common.entity.Run;
 
 import java.util.List;
 
@@ -25,7 +26,7 @@ public interface Parser {
         return webClient;
     }
 
-    List<Item> parsePages(String productName, int waitTime, int countPage);
+    List<Item> parsePages(String productName, int waitTime, int countPage, Run run);
 
     String getShop();
 

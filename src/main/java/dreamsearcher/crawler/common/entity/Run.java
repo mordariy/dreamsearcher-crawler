@@ -1,7 +1,10 @@
 package dreamsearcher.crawler.common.entity;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
 
@@ -9,9 +12,12 @@ import javax.persistence.*;
 @Table(name = "runs")
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class Run {
     @Id
-    @GeneratedValue
+    @GeneratedValue(generator = "uuid")
+    @GenericGenerator(name = "uuid", strategy = "uuid2")
     @Column(name="run_id", nullable=false)
     private String runId;
 

@@ -4,6 +4,7 @@ import dreamsearcher.crawler.common.entity.Run;
 import dreamsearcher.crawler.common.repository.RunRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.List;
 
 @Service
@@ -15,18 +16,27 @@ public class RunService {
         this.runRepository = runRepository;
     }
 
-    public List<Run> getRuns() {
+    public List<Run> get() {
         return (List<Run>) runRepository.findAll();
     }
 
-/*
-    public List<Run> getRunsIfProcessed(boolean processed) {
-        return (List<Run>) runRepository.findAllByProcessed(Boolean.toString(processed));
+    public List<Run> getIfProcessed(boolean isProcessed) {
+        if (isProcessed) {
+            return (List<Run>) runRepository.findAllByIsProcessedTrue();
+        } else {
+            return (List<Run>) runRepository.findAllByIsProcessedFalse();
+        }
     }
-*/
 
-    public void saveRun(Run run) {
-        runRepository.save(run);
+    public Run create(String runShopName) {
+        return runRepository.save(Run.builder()
+                .dateTime(new Date().toString())
+                .shopName(runShopName)
+                .isProcessed(true)
+                .build());
     }
-    
+
+    public Run update(Run run) {
+        return runRepository.save(run);
+    }
 }

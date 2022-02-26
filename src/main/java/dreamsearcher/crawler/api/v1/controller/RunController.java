@@ -16,16 +16,10 @@ public class RunController {
     public RunController(RunService runService) {
         this.runService = runService;
     }
-/*
-    @GetMapping
-    public ResponseEntity getRuns(@RequestParam(value="processed", required = true) boolean processed) {
-        return ResponseEntity.ok(runService.getRunsIfProcessed(processed));
-    }
-*/
 
     @GetMapping
-    public ResponseEntity getRuns() {
-        return ResponseEntity.ok(runService.getRuns());
+    public ResponseEntity getRuns(@RequestParam(value="isProcessed", required = true) boolean isProcessed) {
+        return ResponseEntity.ok(runService.getIfProcessed(isProcessed));
     }
 
 }
