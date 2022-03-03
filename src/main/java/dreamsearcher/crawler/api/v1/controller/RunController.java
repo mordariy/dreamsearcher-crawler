@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/runs")
 public class RunController {
 
-    private RunService runService;
+    private final RunService runService;
 
     public RunController(RunService runService) {
         this.runService = runService;

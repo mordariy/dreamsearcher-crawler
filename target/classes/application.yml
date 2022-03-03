@@ -11,4 +11,7 @@ spring:
         jdbc:
           time_zone: GMT+4
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
+logging:
+  file:
+    name: app.log
