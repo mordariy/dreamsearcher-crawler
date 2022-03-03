@@ -10,7 +10,7 @@ import java.util.List;
 @Service
 public class RunService {
 
-    private RunRepository runRepository;
+    private final RunRepository runRepository;
 
     public RunService(RunRepository runRepository) {
         this.runRepository = runRepository;

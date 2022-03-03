@@ -61,10 +61,9 @@ public class ParserCitilink implements Parser {
                     //какая-то хунта todo: разобраться с i+i
                     if (i + i < listElements[1].size()) {
                         listItem.add(Item.builder()
-                                .runId(run.getRunId())
+                                .run(run)
                                 .itemName(listElements[0].get(i).getTextContent())
                                 .price(Double.parseDouble(listElements[1].get(i + i).getTextContent().trim().replaceAll("[^0-9]", "").replaceAll(" ", "")))
-                                .itemName(productName)
                                 .link(page.getUrl().toString()) //Сейчас ссылка общая по типу "https://www.citilink.ru/search/?text=iphone12&p=1". todo: сделать конкретную ссылку на Item по типу "https://www.citilink.ru/product/smartfon-apple-iphone-12-mgja3ru-a-chernyi-1428565/"
                                 .build());
                     }

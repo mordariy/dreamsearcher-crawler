@@ -23,8 +23,8 @@ public class ParserOnlineTrade implements Parser {
         List<Item> listItem = new ArrayList<>();
 
         try (WebClient webClient = initialiseWebClient()) {
-            HtmlPage mainPage = null;
-            HtmlPage page = null;
+            HtmlPage mainPage;
+            HtmlPage page;
 
             try {
                 mainPage = webClient.getPage("https://www.onlinetrade.ru");
@@ -80,10 +80,9 @@ public class ParserOnlineTrade implements Parser {
 
                 for (int i = 0; i < listElements[0].size(); i++) {
                     listItem.add(Item.builder()
-                            .runId(run.getRunId())
+                            .run(run)
                             .itemName(listElements[0].get(i).getTextContent())
                             .price(Double.parseDouble(listElements[1].get(i).getTextContent().trim().replaceAll("[^0-9]", "").replaceAll(" ", "")))
-                            .itemName(productName)
                             .link(page.getUrl().toString()) //Сейчас ссылка общая по типу "https://www.citilink.ru/search/?text=iphone12&p=1". todo: сделать конкретную ссылку на Item по типу "https://www.citilink.ru/product/smartfon-apple-iphone-12-mgja3ru-a-chernyi-1428565/"
                             .build());
                 }

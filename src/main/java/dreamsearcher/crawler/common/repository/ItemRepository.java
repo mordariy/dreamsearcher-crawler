@@ -9,6 +9,6 @@ import org.springframework.stereotype.Repository;
 @Profile("!test")
 public interface ItemRepository extends CrudRepository<Item, String> {
 
-    Iterable<Item> findAllByRunId(String runId);
+    Iterable<Item> findAllByRunRunId(String runId);
 
 }
