@@ -1,0 +1,16 @@
+[
+  {
+    "itemId": "UUID-1111",
+    "run": null,
+    "itemName": "PocoPhone bablablavovich 12",
+    "link": "URL-1",
+    "price": 349999.99
+  },
+  {
+    "itemId": "UUID-2222",
+    "run": null,
+    "itemName": "PocoPhone bablablavovich 11",
+    "link": "URL-2",
+    "price": 229999.99
+  }
+]

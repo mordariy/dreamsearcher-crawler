@@ -21,8 +21,9 @@ public class Item {
     @Column(name = "item_id", nullable = false)
     private String itemId;
 
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinColumn(name="run_id", referencedColumnName="run_id", nullable=false)
-    private String runId;
+    private Run run;
 
     @Column(name = "item_name")
     private String itemName;

@@ -10,14 +10,10 @@ import java.util.List;
 @Service
 public class RunService {
 
-    private RunRepository runRepository;
+    private final RunRepository runRepository;
 
     public RunService(RunRepository runRepository) {
         this.runRepository = runRepository;
-    }
-
-    public List<Run> get() {
-        return (List<Run>) runRepository.findAll();
     }
 
     public List<Run> getIfProcessed(boolean isProcessed) {
@@ -32,7 +28,7 @@ public class RunService {
         return runRepository.save(Run.builder()
                 .dateTime(new Date().toString())
                 .shopName(runShopName)
-                .isProcessed(true)
+                .isProcessed(false)
                 .build());
     }
 

@@ -15,7 +15,7 @@ import java.util.concurrent.ExecutionException;
 
 @Component
 public class ParserLauncher {
-    List<Parser> parser;
+    private final List<Parser> parser;
     private final Logger log = LoggerFactory.getLogger(ParserLauncher.class);
     private final ItemService itemService;
     private final RunService runService;
@@ -30,12 +30,11 @@ public class ParserLauncher {
         log.info("[Crawler] Parsing has started with the specified parameters: productName = {}, waitTimeInSec = {}, countPageToParse = {}",
                 productName, waitTimeInSec, countPageToParse);
 
-        List<CompletableFuture<List<Item>>> listFuture = asyncParseItems(productName, waitTimeInSec, countPageToParse);
+        List<CompletableFuture<List<Item>>> listFuture = asyncParsePages(productName, waitTimeInSec, countPageToParse);
         asyncSaveItems(listFuture);
-
     }
 
-    private List<CompletableFuture<List<Item>>> asyncParseItems(String productName, int waitTimeInSec, int countPageToParse) {
+    private List<CompletableFuture<List<Item>>> asyncParsePages(String productName, int waitTimeInSec, int countPageToParse) {
         CompletableFuture<List<Item>>[] com = new CompletableFuture[parser.size()];
         List<CompletableFuture<List<Item>>> listFuture = new ArrayList<>();
         for (int i = 0; i < parser.size(); i++) {
@@ -47,8 +46,6 @@ public class ParserLauncher {
             Run run = runService.create(parser.get(i).getShop());
             com[i] = CompletableFuture.supplyAsync(() -> parser.get(finalI).parsePages(productName, waitTimeInSec * 1000, countPageToParse, run));
             listFuture.add(com[finalI]);
-            run.setProcessed(false);
-            runService.update(run);
 
             duration = System.currentTimeMillis() - duration;
             log.info("[Crawler] Parsing in {} ends for {} milliseconds", parser.get(i).getShop(), duration);
@@ -64,7 +61,8 @@ public class ParserLauncher {
                 log.info("[Crawler] Saving items in DB. . .");
                 for (int i = 0; i < listFuture.size(); i++) {
                     log.info("[Crawler] Saving: {}th circle start", i);
-                    itemService.saveItems(listFuture.get(i).get());
+                    List<Item> savedItems = itemService.saveItems(listFuture.get(i).get());
+                    if (savedItems.size() == 0) log.warn("[Crawler] Nothing has been saved...");
                     log.info("[Crawler] Saving: {}th circle end", i);
                 }
             } catch (InterruptedException | ExecutionException e) {

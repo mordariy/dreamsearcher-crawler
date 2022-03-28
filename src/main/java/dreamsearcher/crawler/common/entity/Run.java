@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
+import java.util.Set;
 
 @Entity
 @Table(name = "runs")
@@ -29,4 +30,7 @@ public class Run {
 
     @Column(name="is_processed")
     private boolean isProcessed;
+
+    @OneToMany(mappedBy = "run")
+    private Set<Item> items;
 }

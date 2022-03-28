@@ -16,11 +16,11 @@ public class ItemService {
     }
 
     public List<Item> getItemsByRunId(String runId) {
-        return (List<Item>) itemRepository.findAllByRunId(runId);
+        return (List<Item>) itemRepository.findAllByRunRunId(runId);
     }
 
-    public void saveItems(List<Item> items) {
-        itemRepository.saveAll(items);
+    public List<Item> saveItems(List<Item> items) {
+        return (List<Item>) itemRepository.saveAll(items);
     }
 
 }
